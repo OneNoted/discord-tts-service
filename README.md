@@ -44,6 +44,3 @@ A human readable message describing the error
 - `AWS_ACCESS_KEY_ID` - The AWS access key ID
 
 - `AWS_SECRET_ACCESS_KEY` - The AWS secret access key
-
-## Docker build variables (default)
-- `MODES`(`espeak`) - A comma separated list of modes to support
