@@ -103,7 +103,7 @@ pub async fn get_tts(
 }
 
 static VOICES: tokio::sync::OnceCell<Vec<VoiceLocal>> = tokio::sync::OnceCell::const_new();
-async fn _get_voices(state: &State) -> Result<Vec<VoiceLocal>> {
+async fn get_voices_(state: &State) -> Result<Vec<VoiceLocal>> {
     let mut voices = Vec::new();
     let mut next_token = None;
 
@@ -118,7 +118,7 @@ async fn _get_voices(state: &State) -> Result<Vec<VoiceLocal>> {
             voices.extend(v.into_iter().map(VoiceLocal::from).filter(|v| {
                 v.supported_engines
                     .as_ref()
-                    .map_or(false, |engines| engines.contains(&Engine::Standard))
+                    .is_some_and(|engines| engines.contains(&Engine::Standard))
             }));
         }
         if resp.next_token.is_none() {
@@ -131,14 +131,14 @@ async fn _get_voices(state: &State) -> Result<Vec<VoiceLocal>> {
 
 pub async fn check_voice(state: &State, voice: &str) -> Result<bool> {
     VOICES
-        .get_or_try_init(|| _get_voices(state))
+        .get_or_try_init(|| get_voices_(state))
         .await
         .map(|voices| voices.iter().any(|s| s.id == Some(voice.into())))
 }
 
 pub async fn get_voices(state: &State) -> Result<Vec<String>> {
     VOICES
-        .get_or_try_init(|| _get_voices(state))
+        .get_or_try_init(|| get_voices_(state))
         .await
         .map(|voices| {
             voices
@@ -151,5 +151,5 @@ pub async fn get_voices(state: &State) -> Result<Vec<String>> {
 }
 
 pub async fn get_raw_voices(state: &State) -> Result<&'static Vec<VoiceLocal>> {
-    VOICES.get_or_try_init(|| _get_voices(state)).await
+    VOICES.get_or_try_init(|| get_voices_(state)).await
 }

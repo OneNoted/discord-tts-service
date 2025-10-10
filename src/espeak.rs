@@ -85,7 +85,7 @@ pub async fn get_tts(
 
                 tracing::debug!("mbrola_stderr watcher closed");
             });
-        };
+        }
 
         let output = mbrola_process.wait_with_output().await?;
         if output.stdout.len() == 44 {
@@ -98,7 +98,7 @@ pub async fn get_tts(
                 i += 1;
                 continue;
             }
-        };
+        }
 
         tracing::debug!("Generated eSpeak after {i} tries");
         break output.stdout;

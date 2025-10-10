@@ -228,7 +228,7 @@ pub async fn get_tts(
 }
 
 static VOICES: tokio::sync::OnceCell<Vec<GoogleVoice>> = tokio::sync::OnceCell::const_new();
-async fn _get_voices(state: &RwLock<State>) -> Result<Vec<GoogleVoice>> {
+async fn get_voices_(state: &RwLock<State>) -> Result<Vec<GoogleVoice>> {
     #[derive(serde::Deserialize)]
     struct VoiceResponse {
         voices: Vec<GoogleVoice>,
@@ -254,12 +254,12 @@ pub async fn check_voice(state: &RwLock<State>, voice: &str) -> Result<bool> {
 }
 
 pub async fn get_raw_voices(state: &RwLock<State>) -> Result<&'static Vec<GoogleVoice>> {
-    VOICES.get_or_try_init(|| _get_voices(state)).await
+    VOICES.get_or_try_init(|| get_voices_(state)).await
 }
 
 pub async fn get_voices(state: &RwLock<State>) -> Result<Vec<String>> {
     Ok(VOICES
-        .get_or_try_init(|| _get_voices(state))
+        .get_or_try_init(|| get_voices_(state))
         .await?
         .iter()
         .filter_map(|gvoice| {

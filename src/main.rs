@@ -271,7 +271,7 @@ async fn get_tts(
         if let Some(translated) = translation::run(&state.reqwest, token, &text, &language).await? {
             text = translated;
         }
-    };
+    }
 
     let (audio, content_type) = match mode {
         TTSMode::gTTS => {
@@ -367,7 +367,7 @@ impl TTSMode {
     }
 
     fn check_length(self, audio: &[u8], max_length: Option<u64>) -> ResponseResult<()> {
-        if max_length.map_or(true, |max_length| match self {
+        if max_length.is_none_or(|max_length| match self {
             Self::gTTS => check_mp3_length(audio, max_length),
             Self::eSpeak => espeak::check_length(audio, max_length as u32),
             Self::gCloud | Self::Polly => true,
@@ -561,7 +561,7 @@ impl axum::response::IntoResponse for Error {
     fn into_response(self) -> Response {
         if let Error::Unknown(inner) = &self {
             tracing::error!("{inner:?}");
-        };
+        }
 
         let json_err = serde_json::json!({
             "display": self.to_string(),
