@@ -39,6 +39,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod espeak;
 mod gcloud;
 mod gtts;
+mod gwent;
 mod polly;
 mod translation;
 
@@ -100,6 +101,7 @@ async fn get_voices(
         match mode {
             TTSMode::gTTS => to_value(gtts::get_raw_voices()),
             TTSMode::eSpeak => to_value(espeak::get_voices()),
+            TTSMode::Gwent => to_value(gwent::get_raw_voices()),
             TTSMode::Polly => to_value(polly::get_raw_voices(&state.polly).await?),
             TTSMode::gCloud => to_value(gcloud::get_raw_voices(&state.gcloud).await?),
         }?
@@ -107,6 +109,7 @@ async fn get_voices(
         to_value(match mode {
             TTSMode::gTTS => gtts::get_voices(),
             TTSMode::eSpeak => espeak::get_voices().to_vec(),
+            TTSMode::Gwent => gwent::get_voices(),
             TTSMode::Polly => polly::get_voices(&state.polly).await?,
             TTSMode::gCloud => gcloud::get_voices(&state.gcloud).await?,
         })?
@@ -300,6 +303,18 @@ async fn get_tts(
             )
             .await?
         }
+        TTSMode::Gwent => {
+            gwent::get_tts(
+                &state.gwent,
+                &text,
+                &voice,
+                speaking_rate.unwrap_or(1.0),
+                preferred_format.as_deref(),
+                payload.max_length,
+                hit_any_deadline.clone(),
+            )
+            .await?
+        }
     };
 
     tracing::debug!("Generated TTS from {cache_key}");
@@ -327,6 +342,7 @@ enum TTSMode {
     Polly,
     eSpeak,
     gCloud,
+    Gwent,
 }
 
 impl TTSMode {
@@ -344,6 +360,7 @@ impl TTSMode {
                         Self::eSpeak => "audio/wav",
                         Self::gCloud => "audio/opus",
                         Self::Polly => "audio/ogg",
+                        Self::Gwent => "audio/ogg",
                     })
                 }),
             )
@@ -357,6 +374,7 @@ impl TTSMode {
             Self::eSpeak => espeak::check_voice(voice),
             Self::gCloud => gcloud::check_voice(&state.gcloud, voice).await?,
             Self::Polly => polly::check_voice(&state.polly, voice).await?,
+            Self::Gwent => gwent::check_voice(voice),
         } {
             Ok(())
         } else {
@@ -370,6 +388,7 @@ impl TTSMode {
         if max_length.is_none_or(|max_length| match self {
             Self::gTTS => check_mp3_length(audio, max_length),
             Self::eSpeak => espeak::check_length(audio, max_length as u32),
+            Self::Gwent => check_mp3_length(audio, max_length),
             Self::gCloud | Self::Polly => true,
         }) {
             Ok(())
@@ -396,6 +415,7 @@ impl TTSMode {
             Self::Polly => Some(500.0),
             Self::eSpeak => Some(400.0),
             Self::gCloud => Some(4.0),
+            Self::Gwent => Some(4.0),
         }
     }
 
@@ -405,6 +425,7 @@ impl TTSMode {
             Self::Polly => "Polly",
             Self::eSpeak => "eSpeak",
             Self::gCloud => "gCloud",
+            Self::Gwent => "Gwent",
         }
     }
 }
@@ -440,6 +461,7 @@ struct State {
     polly: polly::State,
     gtts: tokio::sync::RwLock<gtts::State>,
     gcloud: tokio::sync::RwLock<gcloud::State>,
+    gwent: gwent::State,
 }
 
 static STATE: OnceLock<State> = OnceLock::new();
@@ -472,6 +494,7 @@ async fn main() -> Result<()> {
         gcloud: gcloud::State::new(client)?,
         polly: polly::State::new(&aws_config::load_from_env().await),
         gtts: tokio::sync::RwLock::new(gtts::get_random_ipv6(ip_block).await?),
+        gwent: gwent::State::new().await?,
 
         cache: {
             let max_cap = std::env::var("CACHE_MAX_CAPACITY")
@@ -511,6 +534,7 @@ async fn main() -> Result<()> {
                     TTSMode::Polly,
                     TTSMode::eSpeak,
                     TTSMode::gCloud,
+                    TTSMode::Gwent,
                 ])
             }),
         );
