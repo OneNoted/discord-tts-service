@@ -1,14 +1,11 @@
 [
-  {
-    "id": "default",
-    "name": "Default"
-  },
-  {
-    "id": "female",
-    "name": "Female"
-  },
-  {
-    "id": "male",
-    "name": "Male"
-  }
+  {"id": "ryan", "name": "Ryan"},
+  {"id": "vivian", "name": "Vivian"},
+  {"id": "serena", "name": "Serena"},
+  {"id": "aiden", "name": "Aiden"},
+  {"id": "uncle_fu", "name": "Uncle Fu"},
+  {"id": "ono_anna", "name": "Ono Anna"},
+  {"id": "sohee", "name": "Sohee"},
+  {"id": "eric", "name": "Eric"},
+  {"id": "dylan", "name": "Dylan"}
 ]
