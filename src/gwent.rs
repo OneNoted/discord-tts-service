@@ -206,6 +206,16 @@ struct TtsRequest<'a> {
     max_length: Option<u64>,
 }
 
+fn resolve_voice(voice: &str) -> String {
+    static PREFIX: OnceLock<String> = OnceLock::new();
+    let prefix = PREFIX.get_or_init(|| std::env::var("GWENT_VOICE_PREFIX").unwrap_or_default());
+    if prefix.is_empty() || voice.contains(':') {
+        voice.to_string()
+    } else {
+        format!("{prefix}{voice}")
+    }
+}
+
 pub async fn get_tts(
     state: &State,
     text: &str,
@@ -222,9 +232,10 @@ pub async fn get_tts(
     let _permit = state.semaphore.acquire().await?;
     let format = AudioFormat::parse(preferred_format);
 
+    let resolved_voice = resolve_voice(voice);
     let payload = TtsRequest {
         text,
-        voice,
+        voice: &resolved_voice,
         speaking_rate,
         format: format.as_str(),
         max_length,
